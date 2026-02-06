@@ -1,0 +1,8 @@
+pyproject.toml
+setup.py
+pytorch.egg-info/PKG-INFO
+pytorch.egg-info/SOURCES.txt
+pytorch.egg-info/dependency_links.txt
+pytorch.egg-info/requires.txt
+pytorch.egg-info/top_level.txt
+pytorch.egg-info/zip-safe

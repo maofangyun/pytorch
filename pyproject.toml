@@ -1,0 +1,10 @@
+[project]
+name = "pytorch"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.9"
+dependencies = [
+    "d2l==0.16.7",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+]
