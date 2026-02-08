@@ -2,7 +2,7 @@
 name = "pytorch"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "d2l==0.16.7",
     "torch>=2.8.0",
