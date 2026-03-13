@@ -7,3 +7,4 @@
 .idea/inspectionProfiles/profiles_settings.xml
 .vscode/launch.json
 .venv/Lib/*
+data/timemachine.txt
