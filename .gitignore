@@ -8,3 +8,4 @@
 .vscode/launch.json
 .venv/Lib/*
 data/timemachine.txt
+.vscode/settings.json
