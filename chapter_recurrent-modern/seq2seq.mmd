@@ -1,0 +1,56 @@
+---
+config:
+  theme: base
+---
+graph TD
+    %% 数据节点颜色 (蓝色)
+    style X fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
+    style Y fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
+    style X_len fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
+    style Y_len fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
+    style Enc_State fill:#e8f5e9,stroke:#43a047,stroke-width:2px
+    style Y_hat fill:#fff3e0,stroke:#fb8c00,stroke-width:2px
+
+    %% 步骤1：数据输入
+    X["源序列输入 X <br> shape: batch_size, src_steps"]
+    X_len["源有效长度 X_valid_len <br> shape: batch_size"]
+    Y["目标标签 Y <br> shape: batch_size, tgt_steps"]
+    Y_len["目标有效长度 Y_valid_len <br> shape: batch_size"]
+
+    X --> |1. 送入编码器| Enc_Emb["Embedding 嵌入层"]
+    
+    %% 步骤2：编码器流程
+    subgraph 编码器
+        Enc_Emb -->|"shape: batch_size, src_steps, embed_size"| Enc_Perm["维度转置 permute"]
+        Enc_Perm -->|"shape: src_steps, batch_size, embed_size"| Enc_GRU["编码器 GRU"]
+        Enc_GRU -->|输出最后的隐状态| Enc_State["编码器隐状态 state <br> shape: num_layers, batch_size, num_hiddens"]
+    end
+
+    %% 步骤3：解码器输入构建 (Teacher Forcing)
+    Y --> |2. 构建解码器输入| Slice_Y["切片目标序列 Y[:, :-1] <br> shape: batch_size, tgt_steps-1"]
+    BOS["创建起始标记 bos <br> shape: batch_size, 1"]
+    
+    BOS & Slice_Y --> Cat_Dec_In["拼接成 dec_input <br> shape: batch_size, tgt_steps"]
+
+    %% 步骤4：解码器流程
+    Cat_Dec_In -->|3. 送入解码器| Dec_Emb["Embedding 嵌入层"]
+    Dec_Emb -->|"shape: batch_size, tgt_steps, embed_size"| Dec_Perm["维度转置 permute"]
+    
+    %% 隐状态与上下文拼接
+    Enc_State -->|作为初始化隐状态| Dec_GRU["解码器 GRU"]
+    Enc_State -->|"提取最后一层 state[-1]"| Get_Ctx["广播/复制上下文变量 context <br> shape: tgt_steps, batch_size, num_hiddens"]
+    
+    Dec_Perm & Get_Ctx -->|在特征维度拼接| Cat_Ctx["拼接特征 X_and_context <br> shape: tgt_steps, batch_size, embed_size + num_hiddens"]
+    
+    subgraph 解码器
+        Cat_Ctx --> Dec_GRU
+        Dec_GRU -->|"shape: tgt_steps, batch_size, num_hiddens"| Dec_Dense["全连接层 nn.Linear"]
+        Dec_Dense -->|"shape: tgt_steps, batch_size, vocab_size"| Dec_Perm_Back["维度还原 permute"]
+        Dec_Perm_Back --> Y_hat["预测输出 Y_hat <br> shape: batch_size, tgt_steps, vocab_size"]
+    end
+
+    %% 步骤5：损失计算与更新
+    Y_hat & Y & Y_len -->|4. 计算损失| CrossEntropy["遮蔽交叉熵损失 MaskedSoftmaxCELoss"]
+    CrossEntropy -->|5. 反向传播| Backward["损失求和反向传播 l.sum.backward"]
+    Backward -->|6. 防止梯度爆炸| Clip["梯度裁剪 grad_clipping"]
+    Clip -->|7. 参数更新| Step["优化器更新参数 optimizer.step"]
