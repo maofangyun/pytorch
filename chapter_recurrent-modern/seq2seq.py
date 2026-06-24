@@ -93,7 +93,8 @@ class Seq2SeqDecoder(d2l.Decoder):
         # 3. 此外，对于多层 GRU（若 num_layers > 1），PyTorch 会自动将 state 沿着第 0 维（层数维）进行切片，
         #    自动对齐分发给每一层作为各自的 H_0（如 state[0] 分给第一层，state[1] 分给第二层），无需手动对齐。
         output, state = self.rnn(X_and_context, state)
-        # 变换输出的维度回批量大小在前：(batch_size, num_steps, vocab_size)
+        # 入参的output，表示最后一层GRU的所有时间步的隐状态，维度是(num_steps, batch_size, embed_size + num_hiddens)
+        # 变换输出的维度，批量大小在前：(batch_size, num_steps, vocab_size)
         output = self.dense(output).permute(1, 0, 2)
         # output的形状:(batch_size, num_steps, vocab_size)
         # state的形状:(num_layers, batch_size, num_hiddens)
@@ -108,6 +109,12 @@ class Seq2SeqDecoder(d2l.Decoder):
 def sequence_mask(X, valid_len, value=0):
     """在序列中屏蔽不相关的项（通常是填充词元）"""
     maxlen = X.size(1)
+    # 解释：[None, :] 与 [:, None] 的切片升维与广播机制：
+    # 1. 在 PyTorch 中，切片中的 None 表示在对应位置插入一个长度为 1 的新轴（等价于 torch.unsqueeze）。
+    # 2. torch.arange(maxlen)[None, :] 将一维索引升维成形状为 (1, maxlen) 的“行向量”（等价于 unsqueeze(dim=0)）。
+    # 3. valid_len[:, None] 将一维有效长度升维成形状为 (batch_size, 1) 的“列向量”（等价于 unsqueeze(dim=1)）。
+    # 4. (1, maxlen) < (batch_size, 1) 的小于比较会自动触发 PyTorch 的“广播机制”将其均复制为 (batch_size, maxlen)，
+    #    从而高效、无 Python 循环地生成了布尔屏蔽矩阵 (mask)。
     mask = torch.arange((maxlen), dtype=torch.float32,
                         device=X.device)[None, :] < valid_len[:, None]
     X[~mask] = value
