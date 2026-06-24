@@ -51,6 +51,7 @@ class Seq2SeqEncoder(d2l.Encoder):
         X = self.embedding(X)
         # 在循环神经网络模型中，第一个轴对应于时间步
         # 转换后形状：(num_steps, batch_size, embed_size)
+        # 如果GRU设置了batch_first=true，那么这行代码可以去掉
         X = X.permute(1, 0, 2)
         # 如果未提及状态，则默认为0
         output, state = self.rnn(X)
@@ -72,7 +73,7 @@ class Seq2SeqDecoder(d2l.Decoder):
         self.dense = nn.Linear(num_hiddens, vocab_size)
 
     def init_state(self, enc_outputs, *args):
-        # 编码器输出 enc_outputs 的格式为：(output, state)
+        # 编码器输出 enc_outputs 的格式为：(output, state)，这是一个元组
         # 我们使用编码器最后一层、最后一个时间步的隐状态来初始化解码器的隐状态
         return enc_outputs[1]
 
@@ -81,11 +82,16 @@ class Seq2SeqDecoder(d2l.Decoder):
         # 嵌入并将时间步维度放到最前：(num_steps, batch_size, embed_size)
         X = self.embedding(X).permute(1, 0, 2)
         # 广播 context，使其具有与 X 相同的 num_steps。
-        # state[-1] 是编码器最上一层的隐状态，形状为：(batch_size, num_hiddens)
+        # state[-1] 是编码器最后一层的隐状态，形状为：(batch_size, num_hiddens)
         # repeat 之后形状为：(num_steps, batch_size, num_hiddens)
         context = state[-1].repeat(X.shape[0], 1, 1)
         # 拼接嵌入和上下文变量，作为 GRU 的输入
         X_and_context = torch.cat((X, context), 2)
+        # 解释：为什么 X_and_context 已经拼接了 context (即 state[-1])，这里仍需传入 state 作为第二个参数？
+        # 1. 第二个参数 state 扮演的是“初始记忆起点（H_0）”。若缺省不传，GRU 的每一层初始状态会被初始化为全0，导致编码器的语义记忆丢失。
+        # 2. X_and_context 中的 context 扮演的是“每个时间步的持续提醒背景特征”，防止长序列在解码后期遗忘源句子的语义。
+        # 3. 此外，对于多层 GRU（若 num_layers > 1），PyTorch 会自动将 state 沿着第 0 维（层数维）进行切片，
+        #    自动对齐分发给每一层作为各自的 H_0（如 state[0] 分给第一层，state[1] 分给第二层），无需手动对齐。
         output, state = self.rnn(X_and_context, state)
         # 变换输出的维度回批量大小在前：(batch_size, num_steps, vocab_size)
         output = self.dense(output).permute(1, 0, 2)
