@@ -130,13 +130,16 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
     def forward(self, pred, label, valid_len):
         weights = torch.ones_like(label)
         weights = sequence_mask(weights, valid_len)
+        # 不进行任何合并,返回同样维度的损失张量
         self.reduction = 'none'
         # PyTorch 的 CrossEntropyLoss 期望输入预测为 (N, C, d_1, d_2, ..., d_K)
         # 故对 pred 进行 permute，变为 (batch_size, vocab_size, num_steps)
         unweighted_loss = super(MaskedSoftmaxCELoss, self).forward(
             pred.permute(0, 2, 1), label)
         # 对每一个样本计算经过屏蔽掩码后的平均损失
+        # 填充字符的梯度贡献，经过相乘weights之后，全部为零
         weighted_loss = (unweighted_loss * weights).mean(dim=1)
+        # weighted_loss是一个一维张量，维度是(batch_size,)
         return weighted_loss
 
 
@@ -148,13 +151,18 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
 def train_seq2seq(net, data_iter, lr, num_epochs, tgt_vocab, device):
     """训练序列到序列模型"""
     def xavier_init_weights(m):
+        # Xavier 初始化（Glorot 初始化）的核心目的是让每一层的输入与输出方差保持一致，避免梯度消失或梯度爆炸
         if type(m) == nn.Linear:
+            # 对全连接层，直接对其权重矩阵进行 Xavier 均匀分布初始化
             nn.init.xavier_uniform_(m.weight)
         if type(m) == nn.GRU:
+            # GRU 内部有多个参数，遍历其所有内部参数的名字
             for param in m._flat_weights_names:
+                # 过滤偏置项（bias），只针对包含 "weight" 的权重矩阵进行 Xavier 初始化
                 if "weight" in param:
                     nn.init.xavier_uniform_(m._parameters[param])
-
+    # 递归地遍历整个网络的所有子模块（从外层容器到最底层的 Linear、GRU 等），
+    # 并将每个子模块 m 依次传给 xavier_init_weights 进行检查和处理
     net.apply(xavier_init_weights)
     net.to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
