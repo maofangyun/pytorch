@@ -91,7 +91,7 @@ class Seq2SeqDecoder(d2l.Decoder):
         # 1. 第二个参数 state 扮演的是“初始记忆起点（H_0）”。若缺省不传，GRU 的每一层初始状态会被初始化为全0，导致编码器的语义记忆丢失。
         # 2. X_and_context 中的 context 扮演的是“每个时间步的持续提醒背景特征”，防止长序列在解码后期遗忘源句子的语义。
         # 3. 此外，对于多层 GRU（若 num_layers > 1），PyTorch 会自动将 state 沿着第 0 维（层数维）进行切片，
-        #    自动对齐分发给每一层作为各自的 H_0（如 state[0] 分给第一层，state[1] 分给第二层），无需手动对齐。
+        #    自动对齐分发给每一层作为各自的初始隐状态 H_0（如 state[0] 分给第一层，state[1] 分给第二层），无需手动对齐。
         output, state = self.rnn(X_and_context, state)
         # 入参的output，表示最后一层GRU的所有时间步的隐状态，维度是(num_steps, batch_size, embed_size + num_hiddens)
         # 变换输出的维度，批量大小在前：(batch_size, num_steps, vocab_size)
@@ -137,7 +137,7 @@ class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
         unweighted_loss = super(MaskedSoftmaxCELoss, self).forward(
             pred.permute(0, 2, 1), label)
         # 对每一个样本计算经过屏蔽掩码后的平均损失
-        # 填充字符的梯度贡献，经过相乘weights之后，全部为零
+        # 填充字符的梯度贡献，相乘weights之后，全部为零
         weighted_loss = (unweighted_loss * weights).mean(dim=1)
         # weighted_loss是一个一维张量，维度是(batch_size,)
         return weighted_loss
@@ -174,19 +174,29 @@ def train_seq2seq(net, data_iter, lr, num_epochs, tgt_vocab, device):
         timer = d2l.Timer()
         metric = d2l.Accumulator(2)  # 训练损失总和，词元数量
         for batch in data_iter:
+            # PyTorch 默认会把每次计算的梯度累加起来。因此，在训练每个新 Batch 之前，必须把上一次的梯度全部清空。
             optimizer.zero_grad()
             X, X_valid_len, Y, Y_valid_len = [x.to(device) for x in batch]
             # 创建解码器的初始输入：<bos> 引导符
+            # tgt_vocab['<bos>'] 查找<bos>标签符在词表中的索引位置，值为1
+            # [tgt_vocab['<bos>']] * Y.shape[0] 表示会生成一个包含 batch_size 个 1 的 Python 列表：[1, 1, 1, ..., 1]
+            # reshape(-1, 1) 表示转换后的bos的维度是 (batch_size, 1)
             bos = torch.tensor([tgt_vocab['<bos>']] * Y.shape[0],
                                device=device).reshape(-1, 1)
             # 强制教学 (Teacher Forcing)：使用真实的输出序列作为解码器的输入
+            # Y[:, :-1] 表示去掉真实标签Y的最后一列，也就是<eos>,
+            # 然后通过cat，在列维度上，将bos拼接到Y上，这样就砍掉了<eos>，并且补上了<bos>
             dec_input = torch.cat([bos, Y[:, :-1]], 1)
             # 前向传播，net 为 d2l.EncoderDecoder
+            # 即使上一步预测的值是错误，由于强制教学的存在，当前的隐状态 Ht-1 本身并没有“被错误污染”，它依然是对正确历史信息的编码
             Y_hat, _ = net(X, dec_input, X_valid_len)
+            # 带遮蔽的损失函数计算
             l = loss(Y_hat, Y, Y_valid_len)
             l.sum().backward()  # 损失函数的标量进行“反向传播”
+            # 做梯度裁剪，保证训练的稳定，防止梯度过大，即使乘以学习率，仍然会数值溢出
             d2l.grad_clipping(net, 1)
             num_tokens = Y_valid_len.sum()
+            # 权重更新
             optimizer.step()
             with torch.no_grad():
                 metric.add(l.sum(), num_tokens)
@@ -201,33 +211,41 @@ def train_seq2seq(net, data_iter, lr, num_epochs, tgt_vocab, device):
 def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps,
                     device, save_attention_weights=False):
     """序列到序列模型的预测"""
-    # 在预测时将 net 设置为评估模式
+    # 在预测时将 net 设置为评估模式（停用 Dropout、BatchNorm 等）
     net.eval()
-    src_tokens = src_vocab[src_sentence.lower().split(' ')] + [
-        src_vocab['<eos>']]
+    # 将输入的英文句子分词，转换为词表索引，并在末尾添加结束符 <eos>
+    src_tokens = src_vocab[src_sentence.lower().split(' ')] + [src_vocab['<eos>']]
+    # 计算源句子的真实有效长度，并包装成 Tensor
     enc_valid_len = torch.tensor([len(src_tokens)], device=device)
+    # 截断或填充输入句子，使其长度符合 num_steps
     src_tokens = d2l.truncate_pad(src_tokens, num_steps, src_vocab['<pad>'])
-    # 添加批量轴，转换成张量形状：(1, num_steps)
+    # 添加批量轴（Batch Dimension），将形状从 (num_steps,) 转换为 (1, num_steps)
     enc_X = torch.unsqueeze(
         torch.tensor(src_tokens, dtype=torch.long, device=device), dim=0)
+    # 编码器前向传播，对输入序列进行编码
     enc_outputs = net.encoder(enc_X, enc_valid_len)
+    # 初始化解码器的隐状态（用编码器最终的隐状态作为 H_0）
     dec_state = net.decoder.init_state(enc_outputs, enc_valid_len)
-    # 添加批量轴，初始输入为 '<bos>'，形状：(1, 1)
+    # 构造解码器的第一个输入：启动符 <bos>，并添加批量轴，形状为 (1, 1)
     dec_X = torch.unsqueeze(torch.tensor(
         [tgt_vocab['<bos>']], dtype=torch.long, device=device), dim=0)
     output_seq, attention_weight_seq = [], []
     for _ in range(num_steps):
+        # 解码器前向传播，接收当前词输入和当前步隐状态，输出预测概率分布和更新后的隐状态
+        # 在推理阶段，解码器接受的批次数和时间步永远是1
         Y, dec_state = net.decoder(dec_X, dec_state)
-        # 我们使用具有预测最高可能性的词元，作为解码器在下一时间步的输入
+        # 自回归（无强制教学）：选取预测概率最大的词元索引，作为解码器在下一时间步的输入
         dec_X = Y.argmax(dim=2)
+        # 将张量值挤压并转换为 Python 整数
         pred = dec_X.squeeze(dim=0).type(torch.int32).item()
-        # 保存注意力权重（稍后讨论）
+        # 保存注意力权重
         if save_attention_weights:
             attention_weight_seq.append(net.decoder.attention_weights)
-        # 一旦序列结束词元 '<eos>' 被预测，输出序列的生成就完成了
+        # 一旦预测出结束词元 <eos>，说明句子翻译结束，立刻跳出循环
         if pred == tgt_vocab['<eos>']:
             break
         output_seq.append(pred)
+    # 将预测的单词索引转换为文本列表，并用空格连接成最终的法文句子
     return ' '.join(tgt_vocab.to_tokens(output_seq)), attention_weight_seq
 
 
@@ -235,20 +253,40 @@ def predict_seq2seq(net, src_sentence, src_vocab, tgt_vocab, num_steps,
 # 第四部分：预测评估指标 BLEU
 # =====================================================================
 
-def bleu(pred_seq, label_seq, k):  #@save
+def bleu(pred_seq, label_seq, k):  # @save
     """计算BLEU"""
+    # 1. 将预测句和标准句按空格切分成单词列表
     pred_tokens, label_tokens = pred_seq.split(' '), label_seq.split(' ')
+    # 2. 记录两个句子的单词长度
     len_pred, len_label = len(pred_tokens), len(label_tokens)
+
+    # 3. 计算惩罚短句系数 BP
+    # 如果 len_pred > len_label，1 - len_label/len_pred 为正数，min(0, 正数) = 0，math.exp(0) = 1 (无惩罚)
+    # 如果 len_pred <= len_label，算出来的是个负数，math.exp(负数) 得到一个介于 0 到 1 之间的折扣系数
     score = math.exp(min(0, 1 - len_label / len_pred))
+
+    # 4. 循环计算 1-gram 到 k-gram 的精度，并累乘到 score 中
     for n in range(1, k + 1):
         num_matches, label_subs = 0, collections.defaultdict(int)
+
+        # 4.1 统计标准句（Label）中所有长度为 n 的词组（n-gram）出现的频次
+        # 例如：n=2 时，把标准句切成一个个两两相邻的词对，存入字典
         for i in range(len_label - n + 1):
             label_subs[' '.join(label_tokens[i: i + n])] += 1
+
+        # 4.2 统计预测句（Prediction）中匹配上的 n-gram 数量
         for i in range(len_pred - n + 1):
-            if label_subs[' '.join(pred_tokens[i: i + n])] > 0:
-                num_matches += 1
-                label_subs[' '.join(pred_tokens[i: i + n])] -= 1
+            pred_ngram = ' '.join(pred_tokens[i: i + n])
+            # 如果预测的词组在标准句中存在，且可用配额 > 0
+            if label_subs[pred_ngram] > 0:
+                num_matches += 1  # 匹配数 + 1
+                label_subs[pred_ngram] -= 1  # 消耗掉一个配额（这就是截断机制 Clipping）
+
+        # 4.3 计算当前阶数 n 的精度 p_n = num_matches / (预测句中长度为 n 的词组总数)
+        # 并乘以权重 w_n = 0.5^n。最后累乘进总分 score 中
+        # 数学等价于：score = score * (p_n ** (0.5 ** n))
         score *= math.pow(num_matches / (len_pred - n + 1), math.pow(0.5, n))
+
     return score
 
 
