@@ -3,8 +3,10 @@ import math
 import torch
 from torch import nn
 from d2l import torch as d2l
-import matplotlib.pyplot as plt
 import os
+import matplotlib
+matplotlib.use('TkAgg') # 强制使用 TkAgg 后端以确保 Windows 下 GUI 正常渲染
+import matplotlib.pyplot as plt
 
 # 解决 Windows 系统下 d2l 库读取英法数据集时的 GBK 编码报错问题 (UnicodeDecodeError)
 def read_data_nmt_fixed():
@@ -19,13 +21,40 @@ class AnimatorFixed:
                  ylim=None, xscale='linear', yscale='linear',
                  fmts=('-', 'm--', 'g-.', 'r:'), nrows=1, ncols=1,
                  figsize=(3.5, 2.5)):
-        pass
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.xlim = xlim
+        self.ylim = ylim
+        self.figsize = figsize
+        self.x = []
+        self.y = []
+        self.fig = None
+        self.ax = None
 
     def add(self, x, y):
         # 仅在命令行打印训练进度
         # 因为 train_seq2seq 每 10 个 epoch 才 add 一次，所以在此直接打印
         y_val = y[0] if isinstance(y, (tuple, list)) else y
         print(f"Epoch {x:3d}: loss = {y_val:.4f}")
+        
+        self.x.append(x)
+        self.y.append(y_val)
+        
+        # 延迟初始化：仅在有数据要绘制时才创建并打开窗口，避免一开始显示全白窗口
+        if self.fig is None:
+            plt.ion() # 开启交互式模式以支持动态刷新
+            self.fig, self.ax = plt.subplots(figsize=self.figsize)
+        
+        self.ax.cla() # 清空当前子图
+        self.ax.plot(self.x, self.y, 'm-')
+        if self.xlabel: self.ax.set_xlabel(self.xlabel)
+        if self.ylabel: self.ax.set_ylabel(self.ylabel)
+        if self.xlim: self.ax.set_xlim(self.xlim)
+        if self.ylim: self.ax.set_ylim(self.ylim)
+        self.ax.grid(True)
+        
+        plt.draw()     # 强制绘制
+        plt.pause(0.1) # 暂停 0.1 秒，让 GUI 线程有时间处理事件队列并重绘界面
 
 d2l.Animator = AnimatorFixed
 
@@ -115,8 +144,7 @@ def sequence_mask(X, valid_len, value=0):
     # 3. valid_len[:, None] 将一维有效长度升维成形状为 (batch_size, 1) 的“列向量”（等价于 unsqueeze(dim=1)）。
     # 4. (1, maxlen) < (batch_size, 1) 的小于比较会自动触发 PyTorch 的“广播机制”将其均复制为 (batch_size, maxlen)，
     #    从而高效、无 Python 循环地生成了布尔屏蔽矩阵 (mask)。
-    mask = torch.arange((maxlen), dtype=torch.float32,
-                        device=X.device)[None, :] < valid_len[:, None]
+    mask = torch.arange(maxlen, dtype=torch.float32,device=X.device)[None, :] < valid_len[:, None]
     X[~mask] = value
     return X
 
@@ -181,8 +209,7 @@ def train_seq2seq(net, data_iter, lr, num_epochs, tgt_vocab, device):
             # tgt_vocab['<bos>'] 查找<bos>标签符在词表中的索引位置，值为1
             # [tgt_vocab['<bos>']] * Y.shape[0] 表示会生成一个包含 batch_size 个 1 的 Python 列表：[1, 1, 1, ..., 1]
             # reshape(-1, 1) 表示转换后的bos的维度是 (batch_size, 1)
-            bos = torch.tensor([tgt_vocab['<bos>']] * Y.shape[0],
-                               device=device).reshape(-1, 1)
+            bos = torch.tensor([tgt_vocab['<bos>']] * Y.shape[0], device=device).reshape(-1, 1)
             # 强制教学 (Teacher Forcing)：使用真实的输出序列作为解码器的输入
             # Y[:, :-1] 表示去掉真实标签Y的最后一列，也就是<eos>,
             # 然后通过cat，在列维度上，将bos拼接到Y上，这样就砍掉了<eos>，并且补上了<bos>
@@ -350,4 +377,5 @@ if __name__ == '__main__':
         print(f'{eng} => {translation}, bleu {bleu(translation, fra, k=2):.3f}')
 
     # 在非交互模式下，如果绘制了 Animator 图像，可用 plt.show() 把它显示出来
+    plt.ioff()
     plt.show()

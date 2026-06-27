@@ -6,7 +6,7 @@
 
 ## 1. 维度直观流向图
 
-![Seq2Seq 编解码器三维维度计算流向示意图](C:/Users/maofa/.gemini/antigravity/brain/a06417ee-f2b3-4cd7-9050-ca055cae42d5/seq2seq_dimension_flow_visualization_1780908835401.png)
+![Seq2Seq 编解码器三维维度计算流向示意图](seq2seq_dimension_flow_visualization_1780908835401.png)
 
 ---
 
