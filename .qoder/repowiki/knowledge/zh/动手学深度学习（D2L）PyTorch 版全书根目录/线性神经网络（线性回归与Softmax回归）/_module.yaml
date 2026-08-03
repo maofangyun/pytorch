@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_linear_networks
+title: 线性神经网络（线性回归与Softmax回归）
+scope:
+    - chapter_linear-networks/
+source_files: []
+depends_on: []
+related_to: []

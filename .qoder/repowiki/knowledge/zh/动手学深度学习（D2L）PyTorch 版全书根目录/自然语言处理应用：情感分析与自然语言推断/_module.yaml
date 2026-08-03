@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: chapter_natural_language_processing_applications
+title: 自然语言处理应用：情感分析与自然语言推断
+scope:
+    - chapter_natural-language-processing-applications/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_attention_mechanisms
+    - path: chapter_natural_language_processing_pretraining

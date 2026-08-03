@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_convolutional_neural_networks
+title: 卷积神经网络（CNN）基础与LeNet实现
+scope:
+    - chapter_convolutional-neural-networks/
+source_files: []
+depends_on: []
+related_to: []

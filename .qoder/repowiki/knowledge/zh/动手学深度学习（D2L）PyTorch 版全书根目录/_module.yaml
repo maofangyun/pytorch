@@ -1,0 +1,13 @@
+schema_version: 1
+module_path: ""
+title: 动手学深度学习（D2L）PyTorch 版全书根目录
+scope:
+    - setup.py
+    - uv.lock
+    - .gitignore
+    - TERMINOLOGY.ipynb
+    - d2l.bib
+    - index.ipynb
+source_files: []
+depends_on: []
+related_to: []

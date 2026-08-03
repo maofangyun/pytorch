@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_recurrent_modern
+title: 现代循环神经网络（GRU/LSTM/Seq2Seq）
+scope:
+    - chapter_recurrent-modern/
+source_files: []
+depends_on: []
+related_to: []

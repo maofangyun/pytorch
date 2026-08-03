@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: chapter_convolutional_modern
+title: 现代卷积神经网络（AlexNet、VGG、GoogLeNet、ResNet等）
+scope:
+    - chapter_convolutional-modern/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_computer_vision

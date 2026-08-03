@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: chapter_computational_performance
+title: 计算性能优化与并行训练
+scope:
+    - chapter_computational-performance/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_deep_learning_computation

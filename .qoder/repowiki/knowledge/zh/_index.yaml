@@ -1,0 +1,181 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: main
+nodes_managed: true
+exported_at: "2026-07-27T11:01:56Z"
+modules:
+    "":
+        dir_name: 动手学深度学习（D2L）PyTorch 版全书根目录
+        title: 动手学深度学习（D2L）PyTorch 版全书根目录
+        scope:
+            - setup.py
+            - uv.lock
+            - .gitignore
+            - TERMINOLOGY.ipynb
+            - d2l.bib
+            - index.ipynb
+        source_files: []
+        children:
+            - chapter_appendix_tools
+            - chapter_attention_mechanisms
+            - chapter_computational_performance
+            - chapter_computer_vision
+            - chapter_convolutional_modern
+            - chapter_convolutional_neural_networks
+            - chapter_deep_learning_computation
+            - chapter_linear_networks
+            - chapter_multilayer_perceptrons
+            - chapter_natural_language_processing_applications
+            - chapter_natural_language_processing_pretraining
+            - chapter_optimization
+            - chapter_preliminaries
+            - chapter_recurrent_modern
+            - chapter_recurrent_neural_networks
+        depends_on: []
+        related_to: []
+    chapter_appendix_tools:
+        dir_name: 附录：深度学习工具与开发环境指南
+        title: 附录：深度学习工具与开发环境指南
+        scope:
+            - chapter_appendix-tools-for-deep-learning/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_attention_mechanisms:
+        dir_name: 注意力机制与Transformer章节
+        title: 注意力机制与Transformer章节
+        scope:
+            - chapter_attention-mechanisms/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_natural_language_processing_applications
+    chapter_computational_performance:
+        dir_name: 计算性能优化与并行训练
+        title: 计算性能优化与并行训练
+        scope:
+            - chapter_computational-performance/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_deep_learning_computation
+    chapter_computer_vision:
+        dir_name: 计算机视觉实战教程（PyTorch）
+        title: 计算机视觉实战教程（PyTorch）
+        scope:
+            - chapter_computer-vision/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_convolutional_modern
+    chapter_convolutional_modern:
+        dir_name: 现代卷积神经网络（AlexNet、VGG、GoogLeNet、ResNet等）
+        title: 现代卷积神经网络（AlexNet、VGG、GoogLeNet、ResNet等）
+        scope:
+            - chapter_convolutional-modern/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_computer_vision
+    chapter_convolutional_neural_networks:
+        dir_name: 卷积神经网络（CNN）基础与LeNet实现
+        title: 卷积神经网络（CNN）基础与LeNet实现
+        scope:
+            - chapter_convolutional-neural-networks/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_deep_learning_computation:
+        dir_name: 深度学习计算基础（模型构建、参数管理与GPU使用）
+        title: 深度学习计算基础（模型构建、参数管理与GPU使用）
+        scope:
+            - chapter_deep-learning-computation/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_computational_performance
+            - path: chapter_optimization
+    chapter_linear_networks:
+        dir_name: 线性神经网络（线性回归与Softmax回归）
+        title: 线性神经网络（线性回归与Softmax回归）
+        scope:
+            - chapter_linear-networks/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_multilayer_perceptrons:
+        dir_name: 多层感知机（MLP）与正则化技术
+        title: 多层感知机（MLP）与正则化技术
+        scope:
+            - chapter_multilayer-perceptrons/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_natural_language_processing_applications:
+        dir_name: 自然语言处理应用：情感分析与自然语言推断
+        title: 自然语言处理应用：情感分析与自然语言推断
+        scope:
+            - chapter_natural-language-processing-applications/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_attention_mechanisms
+            - path: chapter_natural_language_processing_pretraining
+    chapter_natural_language_processing_pretraining:
+        dir_name: 自然语言处理预训练与词嵌入
+        title: 自然语言处理预训练与词嵌入
+        scope:
+            - chapter_natural-language-processing-pretraining/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_natural_language_processing_applications
+    chapter_optimization:
+        dir_name: 优化算法章节（梯度下降与学习率调度）
+        title: 优化算法章节（梯度下降与学习率调度）
+        scope:
+            - chapter_optimization/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: chapter_deep_learning_computation
+    chapter_preliminaries:
+        dir_name: 预备知识（数学与张量基础）
+        title: 预备知识（数学与张量基础）
+        scope:
+            - chapter_preliminaries/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_recurrent_modern:
+        dir_name: 现代循环神经网络（GRU_LSTM_Seq2Seq）
+        title: 现代循环神经网络（GRU/LSTM/Seq2Seq）
+        scope:
+            - chapter_recurrent-modern/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    chapter_recurrent_neural_networks:
+        dir_name: 循环神经网络与语言模型（PyTorch）
+        title: 循环神经网络与语言模型（PyTorch）
+        scope:
+            - chapter_recurrent-neural-networks/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

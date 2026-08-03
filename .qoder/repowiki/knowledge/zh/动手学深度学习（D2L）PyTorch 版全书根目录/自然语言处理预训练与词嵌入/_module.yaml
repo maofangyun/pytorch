@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: chapter_natural_language_processing_pretraining
+title: 自然语言处理预训练与词嵌入
+scope:
+    - chapter_natural-language-processing-pretraining/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_natural_language_processing_applications

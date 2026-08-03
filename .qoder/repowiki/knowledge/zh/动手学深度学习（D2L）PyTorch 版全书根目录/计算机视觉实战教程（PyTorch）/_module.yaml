@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: chapter_computer_vision
+title: 计算机视觉实战教程（PyTorch）
+scope:
+    - chapter_computer-vision/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_convolutional_modern

@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: chapter_deep_learning_computation
+title: 深度学习计算基础（模型构建、参数管理与GPU使用）
+scope:
+    - chapter_deep-learning-computation/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_computational_performance
+    - path: chapter_optimization

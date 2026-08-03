@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_preliminaries
+title: 预备知识（数学与张量基础）
+scope:
+    - chapter_preliminaries/
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_multilayer_perceptrons
+title: 多层感知机（MLP）与正则化技术
+scope:
+    - chapter_multilayer-perceptrons/
+source_files: []
+depends_on: []
+related_to: []

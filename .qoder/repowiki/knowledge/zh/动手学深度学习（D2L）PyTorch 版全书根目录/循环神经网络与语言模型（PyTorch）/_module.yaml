@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: chapter_recurrent_neural_networks
+title: 循环神经网络与语言模型（PyTorch）
+scope:
+    - chapter_recurrent-neural-networks/
+source_files: []
+depends_on: []
+related_to: []

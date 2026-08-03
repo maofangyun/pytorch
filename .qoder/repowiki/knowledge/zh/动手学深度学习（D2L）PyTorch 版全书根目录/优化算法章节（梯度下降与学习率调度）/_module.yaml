@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: chapter_optimization
+title: 优化算法章节（梯度下降与学习率调度）
+scope:
+    - chapter_optimization/
+source_files: []
+depends_on: []
+related_to:
+    - path: chapter_deep_learning_computation

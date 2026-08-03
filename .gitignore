@@ -9,3 +9,5 @@
 .venv/Lib/*
 data/timemachine.txt
 .vscode/settings.json
+.idea/*
+
